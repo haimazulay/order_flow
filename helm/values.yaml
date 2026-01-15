@@ -1,0 +1,31 @@
+# Default values for orderflow.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  environment: dev
+
+# PostgreSQL Configuration
+# Enable for local development, disable for cloud environments (use externalDatabase)
+postgresql:
+  enabled: true
+  auth:
+    username: "orderflow_user"
+    password: "orderflow_password"
+    database: "orderflow_db"
+  primary:
+    persistence:
+      enabled: false # Ephemeral for dev by default, or use PVC
+
+# External Database Configuration (used when postgresql.enabled is false)
+externalDatabase:
+  host: "my-cloud-db-host"
+  port: 5432
+  user: "admin"
+  password: "password"
+  database: "orderflow_db"
+
+# Services
+# Values for subcharts will go here, e.g.:
+# customer-service:
+#   image: ...

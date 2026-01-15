@@ -1,0 +1,27 @@
+dependencies:
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 13.2.0
+- name: auth
+  repository: file://./charts/auth
+  version: 0.1.0
+- name: customer
+  repository: file://./charts/customer
+  version: 0.1.0
+- name: catalog
+  repository: file://./charts/catalog
+  version: 0.1.0
+- name: order
+  repository: file://./charts/order
+  version: 0.1.0
+- name: production
+  repository: file://./charts/production
+  version: 0.1.0
+- name: api-gateway
+  repository: file://./charts/api-gateway
+  version: 0.1.0
+- name: frontend
+  repository: file://./charts/frontend
+  version: 0.1.0
+digest: sha256:317f5d89f6111563e3d92bf6cbc6f444317ad9d138fc2c1ac1f00239b502d650
+generated: "2026-01-15T18:21:26.3836114+02:00"
