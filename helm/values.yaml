@@ -9,6 +9,10 @@ global:
 # Enable for local development, disable for cloud environments (use externalDatabase)
 postgresql:
   enabled: true
+  image:
+    registry: docker.io
+    repository: bitnami/postgresql
+    tag: "latest"
   auth:
     username: "orderflow_user"
     password: "orderflow_password"
