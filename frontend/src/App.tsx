@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { API_BASE_URL } from "./config";
 import './App.css'
 
 interface DashboardStats {
   orders_count: number;
   urgent_orders: number;
+  late_shipments: number;
   revenue: number;
 }
 
@@ -12,24 +14,23 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock API call to Gateway
     const fetchStats = async () => {
       try {
-        // In real app: fetch('/api/v1/dashboard/overview')
-        await new Promise(r => setTimeout(r, 1000)); // Simulate delay
-        setStats({
-          orders_count: 142,
-          urgent_orders: 5,
-          revenue: 125000
-        });
+        const res = await fetch(`${API_BASE_URL}/dashboard/overview`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: DashboardStats = await res.json();
+        setStats(data);
       } catch (e) {
-        console.error(e);
+        console.error("Failed to load dashboard stats:", e);
+        setStats(null);
       } finally {
         setLoading(false);
       }
     };
+
     fetchStats();
   }, []);
+
 
   return (
     <div className="layout">
@@ -42,10 +43,14 @@ function App() {
         <div className="nav-item">Production</div>
       </nav>
 
+      <button className="btn" onClick={() => alert("click works!")}>
+        Test Click
+      </button>
+
       <main className="main-content">
         <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1>Dashboard Overview</h1>
-          <button className="btn">New Order</button>
+          <button className="btn" onClick={() => alert("New Order functionality coming soon!")}>New Order</button>
         </header>
 
         {loading ? (
@@ -66,8 +71,18 @@ function App() {
 
             <div className="card">
               <h3>Revenue</h3>
-              <div className="stat-value">${stats?.revenue.toLocaleString()}</div>
+              <div className="stat-value">
+                ${stats ? stats.revenue.toLocaleString() : "—"}
+              </div>
               <div>YTD</div>
+            </div>
+
+            <div className="card">
+              <h3>Late Shipments</h3>
+              <div className="stat-value" style={{ color: 'var(--danger-color)' }}>
+                {stats?.late_shipments ?? "—"}
+              </div>
+              <div style={{ color: 'var(--text-secondary)' }}>Delayed deliveries</div>
             </div>
 
             <div className="card" style={{ gridColumn: 'span 2' }}>

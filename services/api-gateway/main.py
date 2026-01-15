@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, HTTPException, status
 import httpx
 import os
 from pydantic_settings import BaseSettings
+from fastapi.middleware.cors import CORSMiddleware
 
 class Settings(BaseSettings):
     AUTH_SERVICE_URL: str = "http://auth-service:8000"
@@ -11,7 +12,20 @@ class Settings(BaseSettings):
     PRODUCTION_SERVICE_URL: str = "http://production-service:8000"
 
 settings = Settings()
+
 app = FastAPI(title="API Gateway", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 client = httpx.AsyncClient()
 
 @app.get("/healthz")
