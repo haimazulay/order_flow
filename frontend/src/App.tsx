@@ -1,109 +1,92 @@
-import { useState, useEffect } from 'react'
-import { API_BASE_URL } from "./config";
-import './App.css'
+import { useState, useEffect } from 'react';
+import './App.css';
 
-interface DashboardStats {
-  orders_count: number;
-  urgent_orders: number;
-  late_shipments: number;
-  revenue: number;
-}
+// Direct to local API Gateway
+const API_BASE_URL = "http://localhost:8000/api";
 
 function App() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/dashboard/overview`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: DashboardStats = await res.json();
-        setStats(data);
-      } catch (e) {
-        console.error("Failed to load dashboard stats:", e);
-        setStats(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Fetch data
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const cRes = await fetch(`${API_BASE_URL}/customers`);
+      const oRes = await fetch(`${API_BASE_URL}/orders`);
+      if (cRes.ok) setCustomers(await cRes.json());
+      if (oRes.ok) setOrders(await oRes.json());
+    } catch (e) {
+      console.error("Connection failed", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchStats();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
+  // Handlers
+  const handleCreateCustomer = async () => {
+    const name = prompt("Customer Name:", "John Doe");
+    if (!name) return;
+
+    await fetch(`${API_BASE_URL}/customers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email: `${name.replace(/\s/g, '').toLowerCase()}@example.com` })
+    });
+    fetchData();
+  };
+
+  const handleCreateOrder = async () => {
+    if (customers.length === 0) {
+      alert("Create a customer first!");
+      return;
+    }
+    const title = prompt("Order Title:", "New Order");
+    if (!title) return;
+
+    // Pick random customer for simplicity
+    const randomCust = customers[Math.floor(Math.random() * customers.length)];
+
+    await fetch(`${API_BASE_URL}/orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customer_id: randomCust.id, title })
+    });
+    fetchData();
+  };
 
   return (
-    <div className="layout">
-      <nav className="sidebar">
-        <h2>OrderFlow</h2>
-        <div className="nav-item active">Dashboard</div>
-        <div className="nav-item">Orders</div>
-        <div className="nav-item">Products</div>
-        <div className="nav-item">Customers</div>
-        <div className="nav-item">Production</div>
-      </nav>
+    <div className="container">
+      <h1>OrderFlow (Local Learning)</h1>
 
-      <button className="btn" onClick={() => alert("click works!")}>
-        Test Click
-      </button>
+      <div className="stats-grid">
+        <div className="card">
+          <h2>Customers</h2>
+          <p className="count">{customers.length}</p>
+          <button onClick={handleCreateCustomer}>Create Customer</button>
+        </div>
 
-      <main className="main-content">
-        <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1>Dashboard Overview</h1>
-          <button className="btn" onClick={() => alert("New Order functionality coming soon!")}>New Order</button>
-        </header>
+        <div className="card">
+          <h2>Orders</h2>
+          <p className="count">{orders.length}</p>
+          <button onClick={handleCreateOrder}>Create Order</button>
+        </div>
+      </div>
 
-        {loading ? (
-          <div>Loading analytics...</div>
-        ) : (
-          <div className="grid">
-            <div className="card">
-              <h3>Total Orders</h3>
-              <div className="stat-value">{stats?.orders_count}</div>
-              <div style={{ color: 'var(--success-color)' }}>+12% from last week</div>
-            </div>
-
-            <div className="card">
-              <h3>Urgent Attention</h3>
-              <div className="stat-value" style={{ color: 'var(--warning-color)' }}>{stats?.urgent_orders}</div>
-              <div style={{ color: 'var(--text-secondary)' }}>Orders pending action</div>
-            </div>
-
-            <div className="card">
-              <h3>Revenue</h3>
-              <div className="stat-value">
-                ${stats ? stats.revenue.toLocaleString() : "—"}
-              </div>
-              <div>YTD</div>
-            </div>
-
-            <div className="card">
-              <h3>Late Shipments</h3>
-              <div className="stat-value" style={{ color: 'var(--danger-color)' }}>
-                {stats?.late_shipments ?? "—"}
-              </div>
-              <div style={{ color: 'var(--text-secondary)' }}>Delayed deliveries</div>
-            </div>
-
-            <div className="card" style={{ gridColumn: 'span 2' }}>
-              <h3>Recent Activity</h3>
-              <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem', color: 'var(--text-secondary)' }}>
-                <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)' }}>
-                  Order #OF-2026-1024 deployed to PRODUCTION
-                </li>
-                <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)' }}>
-                  New customer registered: Acme Corp
-                </li>
-                <li style={{ padding: '0.5rem 0' }}>
-                  Product "Widget X" low on stock
-                </li>
-              </ul>
-            </div>
-          </div>
-        )}
-      </main>
+      <div style={{ marginTop: '2rem', textAlign: 'left', opacity: 0.7 }}>
+        <p>Debug Info:</p>
+        <pre>
+          Start Backend: {'\n'}
+          uvicorn main:app --port 8000 (Gateway){'\n'}
+          uvicorn main:app --port 8001 (Customer){'\n'}
+          uvicorn main:app --port 8002 (Order)
+        </pre>
+      </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

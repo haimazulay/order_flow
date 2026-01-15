@@ -1,39 +1,42 @@
-from fastapi import FastAPI, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from typing import List
-import models
-import schemas
-from database import get_db, engine
+import uuid
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
-# Create tables if not using Alembic (for quick verify), but we use Alembic.
-# models.Base.metadata.create_all(bind=engine)
+app = FastAPI(title="Customer Service")
 
-app = FastAPI(title="Customer Service", version="1.0.0")
+# In-memory database
+customers = []
+
+class CustomerCreate(BaseModel):
+    name: str
+    email: str
+
+class CustomerResponse(BaseModel):
+    id: str
+    name: str
+    email: str
 
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
 
-@app.get("/readyz")
-def readyz():
-    # In real world: check db
-    return {"status": "ok"}
+@app.get("/customers", response_model=list[CustomerResponse])
+def get_customers():
+    return customers
 
-@app.post("/customers", response_model=schemas.CustomerResponse, status_code=status.HTTP_201_CREATED)
-def create_customer(customer: schemas.CustomerCreate, db: Session = Depends(get_db)):
-    db_customer = models.Customer(**customer.model_dump())
-    db.add(db_customer)
-    db.commit()
-    db.refresh(db_customer)
-    return db_customer
+@app.post("/customers", response_model=CustomerResponse, status_code=201)
+def create_customer(customer: CustomerCreate):
+    new_customer = {
+        "id": str(uuid.uuid4()),
+        "name": customer.name,
+        "email": customer.email
+    }
+    customers.append(new_customer)
+    return new_customer
 
-@app.get("/customers/{customer_id}", response_model=schemas.CustomerResponse)
-def get_customer(customer_id: str, db: Session = Depends(get_db)):
-    db_customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
-    if db_customer is None:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    return db_customer
-
-@app.get("/customers", response_model=List[schemas.CustomerResponse])
-def list_customers(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return db.query(models.Customer).offset(skip).limit(limit).all()
+@app.get("/customers/{customer_id}", response_model=CustomerResponse)
+def get_customer(customer_id: str):
+    for c in customers:
+        if c["id"] == customer_id:
+            return c
+    raise HTTPException(status_code=404, detail="Customer not found")
