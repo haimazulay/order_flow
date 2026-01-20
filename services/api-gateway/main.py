@@ -1,6 +1,7 @@
 import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI(title="API Gateway")
 
@@ -13,8 +14,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CUSTOMER_SERVICE_URL = "http://customer:8001"
-ORDER_SERVICE_URL = "http://order:8002"
+CUSTOMER_SERVICE_URL = os.getenv("CUSTOMER_SERVICE_URL", "http://customer:8001")
+ORDER_SERVICE_URL = os.getenv("ORDER_SERVICE_URL", "http://order:8002")
 
 client = httpx.AsyncClient()
 

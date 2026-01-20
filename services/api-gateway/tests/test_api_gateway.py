@@ -4,28 +4,30 @@ import respx
 from httpx import Response
 import sys
 import os
+import os
 
 # Add parent directory to sys.path to import main
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ["CUSTOMER_SERVICE_URL"] = "http://customer:8001"
+os.environ["ORDER_SERVICE_URL"] = "http://order:8002"
 
 from main import app
 
 client = TestClient(app)
 
-
 @pytest.fixture
 def mock_services(respx_mock):
     """Mock downstream services"""
     # Customer Service Mocks
-    respx_mock.get("http://localhost:8001/customers").mock(
+    respx_mock.get("http://customer:8001/customers").mock(
         return_value=Response(200, json=[{"id": "1", "name": "Mock Cust", "email": "mock@test.com"}])
     )
-    respx_mock.post("http://localhost:8001/customers").mock(
+    respx_mock.post("http://customer:8001/customers").mock(
         return_value=Response(201, json={"id": "new-1", "name": "New Cust", "email": "new@test.com"})
     )
     
     # Order Service Mocks
-    respx_mock.get("http://localhost:8002/orders").mock(
+    respx_mock.get("http://order:8002/orders").mock(
         return_value=Response(200, json=[{"id": "o1", "title": "Mock Order", "status": "PENDING"}])
     )
     return respx_mock
@@ -38,7 +40,7 @@ def test_gateway_healthz():
 @respx.mock
 def test_list_customers_proxy():
     # Mock specific for this test if needed, or rely on fixture
-    respx.get("http://localhost:8001/customers").mock(
+    respx.get("http://customer:8001/customers").mock(
         return_value=Response(200, json=[{"id": "1", "name": "M", "email": "e"}])
     )
     
@@ -48,7 +50,7 @@ def test_list_customers_proxy():
 
 @respx.mock
 def test_create_customer_proxy():
-    respx.post("http://localhost:8001/customers").mock(
+    respx.post("http://customer:8001/customers").mock(
         return_value=Response(201, json={"id": "2", "name": "Alice"})
     )
     
@@ -58,7 +60,7 @@ def test_create_customer_proxy():
 
 @respx.mock
 def test_list_orders_proxy():
-    respx.get("http://localhost:8002/orders").mock(
+    respx.get("http://order:8002/orders").mock(
         return_value=Response(200, json=[])
     )
     resp = client.get("/api/orders")
@@ -67,7 +69,7 @@ def test_list_orders_proxy():
 
 @respx.mock
 def test_create_order_proxy():
-    respx.post("http://localhost:8002/orders").mock(
+    respx.post("http://order:8002/orders").mock(
         return_value=Response(201, json={"id": "o2", "title": "O2"})
     )
     
@@ -78,7 +80,7 @@ def test_create_order_proxy():
 @respx.mock
 def test_downstream_failure():
     # Simulate downtime
-    respx.get("http://localhost:8001/customers").mock(side_effect=Exception("Connection Error"))
+    respx.get("http://customer:8001/customers").mock(side_effect=Exception("Connection Error"))
     
     # Note: main.py catches request errors and returns 503
     # except httpx.RequestError: raise HTTPException(status_code=503)
@@ -87,7 +89,7 @@ def test_downstream_failure():
     # Actually, respx side_effect=Exception might not be strictly a RequestError depending on type.
     # Let's import httpx
     import httpx
-    respx.get("http://localhost:8001/customers").mock(side_effect=httpx.ConnectError("Fail"))
+    respx.get("http://customer:8001/customers").mock(side_effect=httpx.ConnectError("Fail"))
 
     resp = client.get("/api/customers")
     assert resp.status_code == 503
