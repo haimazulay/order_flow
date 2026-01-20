@@ -1,0 +1,27 @@
+services:
+  customer:
+    image: ghcr.io/${GITHUB_OWNER}/orderflow-customer:${IMAGE_TAG}
+    ports: [ "8001:8001" ]
+
+  order:
+    image: ghcr.io/${GITHUB_OWNER}/orderflow-order:${IMAGE_TAG}
+    ports: [ "8002:8002" ]
+
+  api-gateway:
+    image: ghcr.io/${GITHUB_OWNER}/orderflow-gateway:${IMAGE_TAG}
+    ports: [ "8000:8000" ]
+    environment:
+      CUSTOMER_SERVICE_URL: "http://customer:8001"
+      ORDER_SERVICE_URL: "http://order:8002"
+    depends_on:
+      customer:
+        condition: service_started
+      order:
+        condition: service_started
+
+  frontend:
+    image: ghcr.io/${GITHUB_OWNER}/orderflow-frontend:${IMAGE_TAG}
+    ports: [ "5173:80" ]
+    depends_on:
+      api-gateway:
+        condition: service_started

@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: customer }
+  template:
+    metadata:
+      labels: { app: customer }
+    spec:
+      containers:
+        - name: customer
+          image: {{ .Values.images.customer }}
+          ports:
+            - containerPort: 8001
+          envFrom:
+            - secretRef:
+                name: orderflow-secrets
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8001 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8001 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.persistence.customerMountPath }}
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: customer-data
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer
+  namespace: {{ .Values.namespace }}
+spec:
+  selector: { app: customer }
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8001

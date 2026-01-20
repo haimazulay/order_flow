@@ -1,0 +1,26 @@
+namespace: orderflow
+
+images:
+  customer: ghcr.io/haimazulay/orderflow-customer:v0.1.0
+  order: ghcr.io/haimazulay/orderflow-order:v0.1.0
+  gateway: ghcr.io/haimazulay/orderflow-gateway:v0.1.0
+  frontend: ghcr.io/haimazulay/orderflow-frontend:v0.1.0
+
+service:
+  gateway:
+    type: LoadBalancer
+    port: 8000
+  frontend:
+    type: ClusterIP
+    port: 80
+
+secrets:
+  enabled: true
+  exampleApiKey: "change-me"
+
+persistence:
+  enabled: true
+  storageClassName: ""  
+  size: 1Gi
+  customerMountPath: /app/data
+  orderMountPath: /app/data

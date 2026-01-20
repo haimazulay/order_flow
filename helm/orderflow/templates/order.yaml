@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: order }
+  template:
+    metadata:
+      labels: { app: order }
+    spec:
+      containers:
+        - name: order
+          image: {{ .Values.images.order }}
+          ports:
+            - containerPort: 8002
+          envFrom:
+            - secretRef:
+                name: orderflow-secrets
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8002 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8002 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.persistence.orderMountPath }}
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: order-data
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order
+  namespace: {{ .Values.namespace }}
+spec:
+  selector: { app: order }
+  ports:
+    - name: http
+      port: 8002
+      targetPort: 8002
