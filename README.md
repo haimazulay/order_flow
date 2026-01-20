@@ -28,8 +28,8 @@ It is ideal for:
 ```mermaid
 graph LR
     U[User Browser]
-    U --> F[Frontend (React + Vite)]
-    F --> G[API Gateway (FastAPI)]
+    U --> F["Frontend (React + Vite)"]
+    F --> G["API Gateway (FastAPI)"]
     G --> C[Customer Service]
     G --> O[Order Service]
 ```
