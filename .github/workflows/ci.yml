@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [ "main" ]
+    tags:
+      - "v*"
 
 permissions:
   contents: read
@@ -60,13 +62,74 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & Push images (SHA tag)
-        shell: bash
-        run: |
-          OWNER_LC="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
-          SHA="${{ github.sha }}"
+      # CUSTOMER
+      - name: Meta (customer)
+        id: meta_customer
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/orderflow-customer
+          tags: |
+            type=sha
+            type=ref,event=tag
 
-          docker buildx build --push -t ghcr.io/$OWNER_LC/orderflow-customer:$SHA ./services/customer
-          docker buildx build --push -t ghcr.io/$OWNER_LC/orderflow-order:$SHA ./services/order
-          docker buildx build --push -t ghcr.io/$OWNER_LC/orderflow-gateway:$SHA ./services/api-gateway
-          docker buildx build --push -t ghcr.io/$OWNER_LC/orderflow-frontend:$SHA ./frontend
+      - name: Build & Push (customer)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/customer
+          push: true
+          tags: ${{ steps.meta_customer.outputs.tags }}
+          labels: ${{ steps.meta_customer.outputs.labels }}
+
+      # ORDER
+      - name: Meta (order)
+        id: meta_order
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/orderflow-order
+          tags: |
+            type=sha
+            type=ref,event=tag
+
+      - name: Build & Push (order)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/order
+          push: true
+          tags: ${{ steps.meta_order.outputs.tags }}
+          labels: ${{ steps.meta_order.outputs.labels }}
+
+      # GATEWAY
+      - name: Meta (gateway)
+        id: meta_gateway
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/orderflow-gateway
+          tags: |
+            type=sha
+            type=ref,event=tag
+
+      - name: Build & Push (gateway)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/api-gateway
+          push: true
+          tags: ${{ steps.meta_gateway.outputs.tags }}
+          labels: ${{ steps.meta_gateway.outputs.labels }}
+
+      # FRONTEND
+      - name: Meta (frontend)
+        id: meta_frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/orderflow-frontend
+          tags: |
+            type=sha
+            type=ref,event=tag
+
+      - name: Build & Push (frontend)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta_frontend.outputs.tags }}
+          labels: ${{ steps.meta_frontend.outputs.labels }}
