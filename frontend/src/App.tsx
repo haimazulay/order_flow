@@ -7,7 +7,7 @@ const API_BASE_URL = "http://localhost:8000/api";
 function App() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   // Fetch data
   const fetchData = async () => {
