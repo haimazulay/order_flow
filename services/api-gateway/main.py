@@ -24,7 +24,7 @@ app.add_middleware(
 CUSTOMER_SERVICE_URL = os.getenv("CUSTOMER_SERVICE_URL", "http://customer:8001")
 ORDER_SERVICE_URL = os.getenv("ORDER_SERVICE_URL", "http://order:8002")
 
-async def proxy(url: str, method: str, body=None):
+async def proxy(request: Request, url: str, method: str, body=None):
     try:
         async with httpx.AsyncClient() as client:
             headers = {"x-request-id": getattr(request.state, "request_id", "")}
@@ -67,24 +67,24 @@ def healthz():
     return {"status": "ok"}
 # Proxy to Customer Service
 @app.get("/api/customers")
-async def list_customers():
-    data, code = await proxy(f"{CUSTOMER_SERVICE_URL}/customers", "GET")
+async def list_customers(request: Request):
+    data, code = await proxy(request, f"{CUSTOMER_SERVICE_URL}/customers", "GET")
     return data
 
 @app.post("/api/customers")
 async def create_customer(request: Request):
     body = await request.json()
-    data, code = await proxy(f"{CUSTOMER_SERVICE_URL}/customers", "POST", body)
+    data, code = await proxy(request, f"{CUSTOMER_SERVICE_URL}/customers", "POST", body)
     return data
 
 # Proxy to Order Service
 @app.get("/api/orders")
-async def list_orders():
-    data, code = await proxy(f"{ORDER_SERVICE_URL}/orders", "GET")
+async def list_orders(request: Request):
+    data, code = await proxy(request, f"{ORDER_SERVICE_URL}/orders", "GET")
     return data
 
 @app.post("/api/orders")
 async def create_order(request: Request):
     body = await request.json()
-    data, code = await proxy(f"{ORDER_SERVICE_URL}/orders", "POST", body)
+    data, code = await proxy(request, f"{ORDER_SERVICE_URL}/orders", "POST", body)
     return data
