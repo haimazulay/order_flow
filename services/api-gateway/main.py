@@ -13,8 +13,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CUSTOMER_SERVICE_URL = "http://localhost:8001"
-ORDER_SERVICE_URL = "http://localhost:8002"
+CUSTOMER_SERVICE_URL = "http://customer:8001"
+ORDER_SERVICE_URL = "http://order:8002"
 
 client = httpx.AsyncClient()
 
