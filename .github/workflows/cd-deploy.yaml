@@ -41,25 +41,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-
+      - name: Install Helm (Windows)
+        shell: pwsh
+        run: |
+          $version = "v3.14.0"
+          $url = "https://get.helm.sh/helm-$version-windows-amd64.zip"
+          Invoke-WebRequest $url -OutFile helm.zip
+          Expand-Archive helm.zip -DestinationPath helm
+          Move-Item helm\windows-amd64\helm.exe C:\Windows\System32\helm.exe
+          helm version
         if: github.repository_owner == 'haimazulay'
 
-      - name: Setup kubeconfig
-        shell: bash
+      - name: Set lowercase owner
+        shell: pwsh
         run: |
-          mkdir -p $HOME/.kube
-          echo "${KUBECONFIG_DATA}" > $HOME/.kube/config
-        env:
-          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_DATA }}
+          echo "OWNER_LC=$('${{ github.repository_owner }}'.ToLower())" >> $env:GITHUB_ENV
+
+      - name: Configure kubeconfig
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:USERPROFILE\.kube
+          Set-Content -Path $env:USERPROFILE\.kube\config -Value "${{ secrets.KUBECONFIG_DATA }}"
 
       - name: Deploy via Helm (tag -> image)
-        shell: bash
+        shell: pwsh
         run: |
-          TAG="${{ github.ref_name }}"
-          helm upgrade --install orderflow ./helm/orderflow -n orderflow --create-namespace \
-            --set images.customer=ghcr.io/${{ github.repository_owner }}/orderflow-customer:${TAG} \
-            --set images.order=ghcr.io/${{ github.repository_owner }}/orderflow-order:${TAG} \
-            --set images.gateway=ghcr.io/${{ github.repository_owner }}/orderflow-gateway:${TAG} \
-            --set images.frontend=ghcr.io/${{ github.repository_owner }}/orderflow-frontend:${TAG}
+          helm upgrade --install orderflow ./helm/orderflow -n orderflow --create-namespace `
+            --set images.customer=ghcr.io/${{ env.OWNER_LC }}/orderflow-customer:${{ github.ref_name }} `
+            --set images.order=ghcr.io/${{ env.OWNER_LC }}/orderflow-order:${{ github.ref_name }} `
+            --set images.gateway=ghcr.io/${{ env.OWNER_LC }}/orderflow-gateway:${{ github.ref_name }} `
+            --set images.frontend=ghcr.io/${{ env.OWNER_LC }}/orderflow-frontend:${{ github.ref_name }}
