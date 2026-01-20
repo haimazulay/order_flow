@@ -17,19 +17,17 @@ app.add_middleware(
 CUSTOMER_SERVICE_URL = os.getenv("CUSTOMER_SERVICE_URL", "http://customer:8001")
 ORDER_SERVICE_URL = os.getenv("ORDER_SERVICE_URL", "http://order:8002")
 
-client = httpx.AsyncClient()
-
-@app.get("/healthz")
-def healthz():
-    return {"status": "ok"}
-
 async def proxy(url: str, method: str, body=None):
     try:
-        resp = await client.request(method, url, json=body)
+        async with httpx.AsyncClient() as client:
+            resp = await client.request(method, url, json=body)
         return resp.json(), resp.status_code
     except httpx.RequestError:
         raise HTTPException(status_code=503, detail="Service unavailable")
 
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
 # Proxy to Customer Service
 @app.get("/api/customers")
 async def list_customers():
