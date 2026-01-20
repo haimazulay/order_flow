@@ -32,12 +32,10 @@ def mock_services(respx_mock):
     )
     return respx_mock
 
-@respx.mock
 def test_gateway_healthz():
     response = client.get("/healthz")
     assert response.status_code == 200
 
-@respx.mock
 def test_list_customers_proxy():
     # Mock specific for this test if needed, or rely on fixture
     respx.get("http://customer:8001/customers").mock(
@@ -48,7 +46,6 @@ def test_list_customers_proxy():
     assert response.status_code == 200
     assert response.json() == [{"id": "1", "name": "M", "email": "e"}]
 
-@respx.mock
 def test_create_customer_proxy():
     respx.post("http://customer:8001/customers").mock(
         return_value=Response(201, json={"id": "2", "name": "Alice"})
@@ -58,7 +55,6 @@ def test_create_customer_proxy():
     assert response.status_code == 200
     assert response.json()["name"] == "Alice"
 
-@respx.mock
 def test_list_orders_proxy():
     respx.get("http://order:8002/orders").mock(
         return_value=Response(200, json=[])
@@ -67,7 +63,6 @@ def test_list_orders_proxy():
     assert resp.status_code == 200
     assert resp.json() == []
 
-@respx.mock
 def test_create_order_proxy():
     respx.post("http://order:8002/orders").mock(
         return_value=Response(201, json={"id": "o2", "title": "O2"})
@@ -77,7 +72,6 @@ def test_create_order_proxy():
     assert resp.status_code == 200
     assert resp.json()["title"] == "O2"
 
-@respx.mock
 def test_downstream_failure():
     # Simulate downtime
     respx.get("http://customer:8001/customers").mock(side_effect=Exception("Connection Error"))
