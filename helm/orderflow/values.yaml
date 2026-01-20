@@ -1,10 +1,13 @@
 namespace: orderflow
 
 images:
-  customer: ghcr.io/haimazulay/orderflow-customer:v0.1.0
-  order: ghcr.io/haimazulay/orderflow-order:v0.1.0
-  gateway: ghcr.io/haimazulay/orderflow-gateway:v0.1.0
-  frontend: ghcr.io/haimazulay/orderflow-frontend:v0.1.0
+  repo:
+    customer: ghcr.io/haimazulay/orderflow-customer
+    order: ghcr.io/haimazulay/orderflow-order
+    gateway: ghcr.io/haimazulay/orderflow-gateway
+    frontend: ghcr.io/haimazulay/orderflow-frontend
+  tag: "v0.1.0"
+  pullPolicy: IfNotPresent
 
 service:
   gateway:
@@ -16,7 +19,7 @@ service:
 
 secrets:
   enabled: true
-  exampleApiKey: "change-me"
+  apiKey: ""
 
 persistence:
   enabled: true
@@ -24,3 +27,8 @@ persistence:
   size: 1Gi
   customerMountPath: /app/data
   orderMountPath: /app/data
+
+gateway:
+  customerUrl: "http://customer:8001"
+  orderUrl: "http://order:8002"
+

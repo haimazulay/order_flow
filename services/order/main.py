@@ -1,6 +1,12 @@
 import uuid
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import json
+import logging
+import time
+
+logger = logging.getLogger("app")
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="Order Service")
 
@@ -16,6 +22,26 @@ class OrderResponse(BaseModel):
     customer_id: str
     title: str
     status: str
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    duration_ms = int((time.time() - start) * 1000)
+
+    logger.info(json.dumps({
+        "service": "api-gateway",
+        "method": request.method,
+        "path": str(request.url.path),
+        "status": response.status_code,
+        "duration_ms": duration_ms,
+        "request_id": request.headers.get("x-request-id", "")
+    }))
+    return response
+    
+@app.get("/metrics")
+def metrics():
+    return "metrics_ready 1\n"
 
 @app.get("/healthz")
 def healthz():

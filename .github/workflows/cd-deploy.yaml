@@ -67,7 +67,30 @@ jobs:
         shell: powershell
         run: |
           helm upgrade --install orderflow ./helm/orderflow -n orderflow --create-namespace `
-            --set images.customer=ghcr.io/${{ env.OWNER_LC }}/orderflow-customer:${{ github.ref_name }} `
-            --set images.order=ghcr.io/${{ env.OWNER_LC }}/orderflow-order:${{ github.ref_name }} `
-            --set images.gateway=ghcr.io/${{ env.OWNER_LC }}/orderflow-gateway:${{ github.ref_name }} `
-            --set images.frontend=ghcr.io/${{ env.OWNER_LC }}/orderflow-frontend:${{ github.ref_name }}
+            --set images.tag=${{ github.ref_name }} `
+            --set images.repo.customer=ghcr.io/${{ env.OWNER_LC }}/orderflow-customer `
+            --set images.repo.order=ghcr.io/${{ env.OWNER_LC }}/orderflow-order `
+            --set images.repo.gateway=ghcr.io/${{ env.OWNER_LC }}/orderflow-gateway `
+            --set images.repo.frontend=ghcr.io/${{ env.OWNER_LC }}/orderflow-frontend
+
+      - name: Smoke tests (post-deploy)
+        shell: pwsh
+        run: |
+          kubectl -n orderflow rollout status deploy/customer --timeout=120s
+          kubectl -n orderflow rollout status deploy/order --timeout=120s
+          kubectl -n orderflow rollout status deploy/api-gateway --timeout=120s
+          kubectl -n orderflow rollout status deploy/frontend --timeout=120s
+
+          $svc = kubectl -n orderflow get svc api-gateway -o jsonpath="{.spec.ports[0].port}"
+          Write-Host "Gateway service port: $svc"
+
+          # Port-forward for reliable local check
+          Start-Process -NoNewWindow -FilePath "kubectl" -ArgumentList "-n orderflow port-forward svc/api-gateway 8000:8000" 
+          Start-Sleep -Seconds 3
+
+          $resp = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8000/healthz
+          if ($resp.StatusCode -ne 200) { throw "Smoke test failed: /healthz" }
+
+          Write-Host "Smoke OK"
+
+

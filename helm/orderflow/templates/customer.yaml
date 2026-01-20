@@ -11,9 +11,17 @@ spec:
     metadata:
       labels: { app: customer }
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: customer
-          image: {{ .Values.images.customer }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+          image: {{ .Values.images.repo.customer }}:{{ .Values.images.tag }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
           ports:
             - containerPort: 8001
           envFrom:

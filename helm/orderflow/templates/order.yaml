@@ -11,9 +11,17 @@ spec:
     metadata:
       labels: { app: order }
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: order
-          image: {{ .Values.images.order }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+          image: {{ .Values.images.repo.order }}:{{ .Values.images.tag }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
           ports:
             - containerPort: 8002
           envFrom:

@@ -13,9 +13,17 @@ spec:
       labels:
         app: frontend
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: frontend
-          image: {{ .Values.images.frontend }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+          image: {{ .Values.images.repo.frontend }}:{{ .Values.images.tag }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
           ports:
             - containerPort: 80
           readinessProbe:

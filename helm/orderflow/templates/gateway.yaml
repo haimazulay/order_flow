@@ -13,9 +13,17 @@ spec:
       labels:
         app: api-gateway
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: api-gateway
-          image: {{ .Values.images.gateway }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+          image: {{ .Values.images.repo.gateway }}:{{ .Values.images.tag }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
           ports:
             - containerPort: 8000
           env:
@@ -52,3 +60,9 @@ spec:
   ports:
     - port: {{ .Values.service.gateway.port }}
       targetPort: 8000
+
+env:
+  - name: CUSTOMER_SERVICE_URL
+    value: {{ .Values.gateway.customerUrl | quote }}
+  - name: ORDER_SERVICE_URL
+    value: {{ .Values.gateway.orderUrl | quote }}
